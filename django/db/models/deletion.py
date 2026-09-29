@@ -232,9 +232,24 @@ class Collector:
         """
         Get a QuerySet of objects related to `objs` via the relation `related`.
         """
-        return related.related_model._base_manager.using(self.using).filter(
+        related_model = related.related_model
+        qs = related_model._base_manager.using(self.using).filter(
             **{"%s__in" % related.field.name: objs}
         )
+        # Only fetch fields required for cascading deletion unless deletion
+        # signal receivers are connected (they may need any field).
+        if not (
+            signals.pre_delete.has_listeners(related_model) or
+            signals.post_delete.has_listeners(related_model)
+        ):
+            field_names = {related_model._meta.pk.name}
+            for rel in get_candidate_relations_to_delete(related_model._meta):
+                field_names.update(
+                    related_field.name
+                    for related_field in rel.field.foreign_related_fields
+                )
+            qs = qs.only(*tuple(field_names))
+        return qs
 
     def instances_with_model(self):
         for model, instances in self.data.items():
