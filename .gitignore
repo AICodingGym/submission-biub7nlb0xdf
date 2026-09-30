@@ -25,3 +25,13 @@ tests/report/
 .*
 *.md
 !.gitignore
+
+# gym-environment
+.claudeignore
+.copilotignore
+.cursorignore
+.cursorrules
+.geminiignore
+.github
+CLAUDE.md
+GEMINI.md
